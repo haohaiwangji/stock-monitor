@@ -483,11 +483,11 @@ def check_market_report(state):
         "### 📰 【新闻汇总】",
         "",
     ]
-    if not news_items:
-        print("  市场播报：本半小时无重要新闻，跳过推送")
-        return
+    if news_items:
+        parts.extend(news_items)
+    else:
+        parts.append("暂无重要市场新闻")
 
-    parts.extend(news_items)
     push(f"🌐 市场播报 {now_str}", "\n".join(parts))
 
 
