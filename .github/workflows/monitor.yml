@@ -24,6 +24,7 @@ jobs:
       - name: 运行监控
         env:
           SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
+          SERVERCHAN_KEY2: ${{ secrets.SERVERCHAN_KEY2 }}
         run: python monitor.py
 
       - name: 保存状态
