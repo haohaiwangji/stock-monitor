@@ -6,7 +6,10 @@ import hashlib
 import urllib.parse
 from datetime import datetime, timezone, timedelta
 
-SERVERCHAN_KEY = os.environ["SERVERCHAN_KEY"]
+SERVERCHAN_KEYS = [k for k in [
+    os.environ.get("SERVERCHAN_KEY", ""),
+    os.environ.get("SERVERCHAN_KEY2", ""),
+] if k]
 CST = timezone(timedelta(hours=8))
 STATE_FILE = "state.json"
 
@@ -149,14 +152,21 @@ def is_china_related(text):
 
 
 def push(title, content):
-    resp = requests.post(
-        "https://sctapi.ftqq.com/" + SERVERCHAN_KEY + ".send",
-        data={"title": title, "desp": content},
-        timeout=10,
-    )
-    ok = resp.status_code == 200
-    print(f"  推送{'成功' if ok else '失败'}: {title[:60]}")
-    return ok
+    ok_all = True
+    for key in SERVERCHAN_KEYS:
+        try:
+            resp = requests.post(
+                f"https://sctapi.ftqq.com/{key}.send",
+                data={"title": title, "desp": content},
+                timeout=10,
+            )
+            ok = resp.status_code == 200
+            if not ok:
+                ok_all = False
+        except Exception:
+            ok_all = False
+    print(f"  推送{'成功' if ok_all else '部分失败'} ({len(SERVERCHAN_KEYS)}个微信): {title[:50]}")
+    return ok_all
 
 
 def url_hash(s):
