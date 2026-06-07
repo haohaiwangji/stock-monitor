@@ -438,44 +438,40 @@ def check_market_report(state):
     now_str = now.strftime("%H:%M")
     market = get_market_data()
 
-    # 抓有市场影响的新闻，先试1小时内，再扩展到6小时
+    # 只取过去30分钟内有市场影响的新闻
     news_items = []
     seen_titles = set()
-    for hours in [1, 6, 24]:
+    cutoff = datetime.now(tz=timezone.utc) - timedelta(minutes=30)
+    for label, url in MARKET_RSS:
         if len(news_items) >= 8:
             break
-        cutoff = datetime.now(tz=timezone.utc) - timedelta(hours=hours)
-        for label, url in MARKET_RSS:
-            if len(news_items) >= 8:
-                break
-            try:
-                feed = feedparser.parse(url)
-                for entry in feed.entries[:20]:
-                    if len(news_items) >= 8:
-                        break
-                    pub = entry.get("published_parsed")
-                    if pub:
-                        pub_dt = datetime(*pub[:6], tzinfo=timezone.utc)
-                        if pub_dt < cutoff:
-                            continue
-                        event_time = pub_dt.astimezone(CST).strftime("%H:%M")
-                    else:
-                        event_time = now_str
-                    title = entry.get("title", "").strip()
-                    if not title or title in seen_titles:
-                        continue
-                    if not has_market_impact(title):
-                        continue
-                    seen_titles.add(title)
-                    zh = translate(title)
-                    display_text = zh if zh and zh != title else title
-                    link = entry.get("link", "")
-                    if link:
-                        news_items.append(f"🕐 {event_time}（北京时间）\n[{display_text}]({link})\n")
-                    else:
-                        news_items.append(f"🕐 {event_time}（北京时间）\n{display_text}\n")
-            except Exception:
-                pass
+        try:
+            feed = feedparser.parse(url)
+            for entry in feed.entries[:20]:
+                if len(news_items) >= 8:
+                    break
+                pub = entry.get("published_parsed")
+                if not pub:
+                    continue
+                pub_dt = datetime(*pub[:6], tzinfo=timezone.utc)
+                if pub_dt < cutoff:
+                    continue
+                event_time = pub_dt.astimezone(CST).strftime("%H:%M")
+                title = entry.get("title", "").strip()
+                if not title or title in seen_titles:
+                    continue
+                if not has_market_impact(title):
+                    continue
+                seen_titles.add(title)
+                zh = translate(title)
+                display_text = zh if zh and zh != title else title
+                link = entry.get("link", "")
+                if link:
+                    news_items.append(f"🕐 {event_time}（北京时间）\n[{display_text}]({link})\n")
+                else:
+                    news_items.append(f"🕐 {event_time}（北京时间）\n{display_text}\n")
+        except Exception:
+            pass
 
     parts = [
         f"## 🌐 全球市场播报 {now_str}",
