@@ -12,6 +12,14 @@ STATE_FILE = "state.json"
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
 
+RSSHUB_INSTANCES = [
+    "rsshub.app",
+    "hub.slarker.me",
+    "rsshub.rssforever.com",
+    "rss.shab.fun",
+    "rsshub.feeded.xyz",
+]
+
 NITTER_INSTANCES = [
     "nitter.privacydev.net",
     "nitter.poast.org",
@@ -22,9 +30,7 @@ NITTER_INSTANCES = [
     "nitter.woodland.cafe",
     "nitter.sethforprivacy.com",
     "nitter.net",
-    "nitter.it",
     "nitter.fdn.fr",
-    "nitter.kavin.rocks",
 ]
 
 TWITTER_ACCOUNTS = {
@@ -122,13 +128,25 @@ def url_hash(s):
     return hashlib.md5(s.encode()).hexdigest()[:12]
 
 
-def fetch_nitter(handle):
+def fetch_twitter_rss(handle):
+    # 先试 RSSHub（更稳定）
+    for instance in RSSHUB_INSTANCES:
+        try:
+            url = f"https://{instance}/twitter/user/{handle}"
+            resp = requests.get(url, headers=HEADERS, timeout=8)
+            if resp.status_code == 200 and len(resp.content) > 200:
+                feed = feedparser.parse(resp.content)
+                if feed.entries:
+                    print(f"  RSSHub OK: {instance}")
+                    return feed.entries
+        except Exception:
+            continue
+
+    # RSSHub 全失败，fallback 到 Nitter
     for instance in NITTER_INSTANCES:
         try:
-            resp = requests.get(
-                f"https://{instance}/{handle}/rss",
-                headers=HEADERS, timeout=6
-            )
+            url = f"https://{instance}/{handle}/rss"
+            resp = requests.get(url, headers=HEADERS, timeout=6)
             if resp.status_code == 200 and len(resp.content) > 200:
                 feed = feedparser.parse(resp.content)
                 if feed.entries:
@@ -136,6 +154,7 @@ def fetch_nitter(handle):
                     return feed.entries
         except Exception:
             continue
+
     return []
 
 
@@ -151,7 +170,7 @@ def check_twitter(state):
         china_only = acct["filter"] == "china"
 
         print(f"检查 @{handle} ...")
-        entries = fetch_nitter(handle)
+        entries = fetch_twitter_rss(handle)
         if not entries:
             print(f"  {display}: 所有 Nitter 实例不可用，跳过")
             continue
