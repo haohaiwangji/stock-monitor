@@ -184,6 +184,41 @@ def is_china_related(text):
     return any(kw in text.lower() for kw in CHINA_KEYWORDS)
 
 
+def trading_signal(title):
+    """Keyword-based: list mentioned assets/sectors and market-relevant topics, no sentiment."""
+    t = title.lower()
+
+    STOCK_MAP = {
+        "nvidia": "英伟达(NVDA)", "nvda": "英伟达(NVDA)",
+        "tsla": "特斯拉(TSLA)", "tesla": "特斯拉(TSLA)",
+        "apple": "苹果(AAPL)", "aapl": "苹果(AAPL)",
+        "microsoft": "微软(MSFT)", "msft": "微软(MSFT)",
+        "google": "谷歌(GOOGL)", "alphabet": "谷歌(GOOGL)",
+        "amazon": "亚马逊(AMZN)", "amzn": "亚马逊(AMZN)",
+        "meta": "Meta(META)",
+        "semiconductor": "半导体板块", "chip ban": "芯片出口管制",
+        "chip": "芯片概念",
+        "artificial intelligence": "AI概念",
+        "federal reserve": "美联储政策", "fomc": "美联储政策",
+        "rate cut": "降息相关", "rate hike": "加息相关", "interest rate": "利率政策",
+        "tariff": "关税政策", "trade war": "贸易摩擦",
+        "china": "中国/中概股", "huawei": "华为/芯片",
+        "smic": "中芯国际", "export control": "出口管制",
+        "oil price": "油价/石油板块", "opec": "石油板块",
+        "nasdaq": "纳斯达克", "s&p 500": "标普500",
+        "nikkei": "日经225", "kospi": "韩国股市",
+        "a股": "A股市场", "上证": "A股市场", "港股": "港股市场",
+        "earnings": "财报季", "ipo": "IPO",
+        "recession": "衰退风险", "inflation": "通胀数据", "cpi": "CPI数据",
+        "bank of japan": "日本央行政策", "boj": "日本央行政策",
+    }
+
+    found = list(dict.fromkeys(v for k, v in STOCK_MAP.items() if k in t))
+    if not found:
+        return "无直接股市影响"
+    return "涉及：" + "、".join(found[:4])
+
+
 def push(title, content):
     ok_all = True
     for key in SERVERCHAN_KEYS:
@@ -282,9 +317,10 @@ def check_twitter(state):
                     tweet_time = now_str
 
                 zh = translate(title)
-                body = f"**🐦 {display}**\n\n🕐 发推时间：{tweet_time}（北京时间）\n\n{title}"
+                signal = trading_signal(title + " " + (zh or ""))
+                body = f"**🐦 {display}**\n\n🕒 发推时间：{tweet_time}（北京时间）\n\n📝 **中文翻译：**\n{zh if zh and zh != title else title}\n\n💡 **交易信号解读：** {signal}"
                 if zh and zh != title:
-                    body += f"\n\n> **中文：** {zh}"
+                    body += f"\n\n---\n*原文：{title}*"
 
                 tag = "🇨🇳 涉华 · " if china_only else ""
                 push(f"⚡ {tag}{display} {tweet_time}", body)
@@ -353,6 +389,24 @@ def check_breaking_news(state):
 
 # ── 市场播报（每30分钟）──────────────────────────────
 
+MARKET_IMPACT_KEYWORDS = [
+    "federal reserve", "fed rate", "fomc", "rate cut", "rate hike", "inflation", "cpi",
+    "earnings", "gdp", "recession", "bank", "tariff", "trade war", "sanctions",
+    "trump", "powell", "nvidia", "tesla", "apple", "microsoft",
+    "oil price", "opec", "gold", "bitcoin", "crypto",
+    "war", "crisis", "collapse", "default", "bankruptcy",
+    "美联储", "加息", "降息", "通胀", "CPI", "财报", "GDP", "衰退",
+    "关税", "贸易战", "制裁", "特朗普", "英伟达", "特斯拉",
+    "战争", "危机", "违约", "破产", "暴跌", "暴涨", "熔断",
+    "上证", "深证", "纳斯达克", "标普", "日经", "港股",
+]
+
+
+def has_market_impact(title):
+    t = title.lower()
+    return any(kw in t for kw in MARKET_IMPACT_KEYWORDS)
+
+
 def get_market_data():
     lines = []
     for name, symbol in INDICES:
@@ -360,12 +414,14 @@ def get_market_data():
             url = (f"https://query1.finance.yahoo.com/v8/finance/chart/"
                    f"{symbol}?interval=1d&range=5d")
             resp = requests.get(url, headers=HEADERS, timeout=10)
-            closes = resp.json()["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+            data = resp.json()["chart"]["result"][0]
+            closes = data["indicators"]["quote"][0]["close"]
             closes = [c for c in closes if c is not None]
             if len(closes) >= 2:
-                pct = (closes[-1] - closes[-2]) / closes[-2] * 100
+                curr = closes[-1]
+                pct = (curr - closes[-2]) / closes[-2] * 100
                 arrow = "📈" if pct > 0 else "📉"
-                lines.append(f"{arrow} **{name}**: {pct:+.2f}%")
+                lines.append(f"- {arrow} **{name}**: {curr:,.2f}（{pct:+.2f}%）")
         except Exception as e:
             print(f"  行情失败 {name}: {e}")
     return "\n".join(lines)
@@ -379,13 +435,14 @@ def check_market_report(state):
         return
     state["last_market_block"] = block
 
-    now_str = now.strftime("%m-%d %H:%M")
+    now_str = now.strftime("%H:%M")
     market = get_market_data()
 
-    # 抓新闻，先试6小时内，没有则取24小时内最新5条
+    # 抓有市场影响的新闻，先试1小时内，再扩展到6小时
     news_items = []
-    for hours in [6, 24]:
-        if news_items:
+    seen_titles = set()
+    for hours in [1, 6, 24]:
+        if len(news_items) >= 8:
             break
         cutoff = datetime.now(tz=timezone.utc) - timedelta(hours=hours)
         for label, url in MARKET_RSS:
@@ -393,42 +450,48 @@ def check_market_report(state):
                 break
             try:
                 feed = feedparser.parse(url)
-                count = 0
-                for entry in feed.entries:
-                    if count >= 2:
+                for entry in feed.entries[:20]:
+                    if len(news_items) >= 8:
                         break
                     pub = entry.get("published_parsed")
                     if pub:
                         pub_dt = datetime(*pub[:6], tzinfo=timezone.utc)
                         if pub_dt < cutoff:
                             continue
+                        event_time = pub_dt.astimezone(CST).strftime("%H:%M")
+                    else:
+                        event_time = now_str
                     title = entry.get("title", "").strip()
-                    link = entry.get("link", "")
-                    if not title:
+                    if not title or title in seen_titles:
                         continue
-                    event_time = ""
-                    if pub:
-                        event_time = datetime(*pub[:6], tzinfo=timezone.utc).astimezone(CST).strftime("%m-%d %H:%M")
+                    if not has_market_impact(title):
+                        continue
+                    seen_titles.add(title)
                     zh = translate(title)
-                    item = f"\n{label}"
-                    if event_time:
-                        item += f" · 🕐 {event_time}"
-                    item += f"\n[{title}]({link})"
-                    if zh and zh != title:
-                        item += f"\n> {zh}"
-                    news_items.append(item)
-                    count += 1
+                    display_text = zh if zh and zh != title else title
+                    link = entry.get("link", "")
+                    if link:
+                        news_items.append(f"- [{event_time}] [{display_text}]({link})")
+                    else:
+                        news_items.append(f"- [{event_time}] {display_text}")
             except Exception:
                 pass
 
-    parts = [f"## 市场播报 {now_str}"]
-    parts.append("\n### 指数行情\n" + (market or "暂无数据（休市）"))
+    parts = [
+        f"## 🌐 全球市场半小时播报",
+        f"⏰ 播报时间：{now_str}（北京时间）",
+        "",
+        "### 📊 【实时行情速递】",
+        market or "暂无数据（休市或数据源限制）",
+        "",
+        "### 📰 【过去半小时新闻汇总】",
+    ]
     if news_items:
-        parts.append("\n### 最新资讯" + "".join(news_items))
+        parts.extend(news_items)
     else:
-        parts.append("\n### 最新资讯\n暂无新内容")
+        parts.append("暂无对股市有实质性影响的新闻")
 
-    push(f"市场播报 {now_str}", "\n".join(parts))
+    push(f"🌐 市场播报 {now_str}", "\n".join(parts))
 
 
 # ── 主入口 ───────────────────────────────────────────
