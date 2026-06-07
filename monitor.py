@@ -290,7 +290,7 @@ def check_breaking_news(state):
         state["seen_news"] = (list(seen) + new_seen)[-300:]
         return
 
-    # 合并成一条推送
+    # 同一次检查的所有突发新闻合并成一条，立即推送
     lines = [f"## 🔴 突发快讯 {now_str}\n"]
     for category, items in collected.items():
         lines.append(f"\n### {category}")
@@ -299,11 +299,8 @@ def check_breaking_news(state):
             if zh and zh != title:
                 lines.append(f"> {zh}")
 
-    content = "\n".join(lines)
-    total = sum(len(v) for v in collected.items())
-    cats = " · ".join(collected.keys())
-    push(f"🔴 突发快讯 {now_str}", content)
-    print(f"  合并推送 {len(collected)} 个类别: {cats}")
+    push(f"🔴 突发快讯 {now_str}", "\n".join(lines))
+    print(f"  合并推送 {len(collected)} 个类别，共 {sum(len(v) for v in collected.values())} 条")
 
     state["seen_news"] = (list(seen) + new_seen)[-300:]
 
