@@ -90,15 +90,40 @@ BREAKING_KEYWORDS = {
         "china trade", "china sanctions", "china taiwan", "china us",
         "中国经济", "人民银行", "中美", "两岸", "政策出台", "国务院",
     ],
+    "🇯🇵 日本": [
+        "bank of japan", "boj rate", "nikkei", "japan economy", "yen falls", "yen rises",
+        "japan gdp", "japan inflation", "kishida", "日本央行", "日元", "日经", "日本经济",
+    ],
+    "🇰🇷 韩国": [
+        "korea gdp", "kospi", "samsung earnings", "bank of korea", "sk hynix",
+        "korea economy", "韩国经济", "韩元", "三星财报", "韩国央行",
+    ],
+    "🌍 地缘政治": [
+        "iran nuclear", "israel gaza", "russia ukraine", "north korea", "south china sea",
+        "oil price surge", "oil price crash", "opec", "nato", "g7", "g20",
+        "伊朗", "以色列", "俄乌", "朝鲜", "南海", "油价", "欧佩克",
+    ],
 }
 
 BREAKING_RSS = [
+    # 英文全球
     "https://feeds.bbci.co.uk/news/world/rss.xml",
     "https://feeds.bbci.co.uk/news/business/rss.xml",
     "https://www.aljazeera.com/xml/rss/all.xml",
+    "https://rss.dw.com/rdf/rss-en-all",                  # 德国之声
+    "https://www.france24.com/en/rss",                     # 法国24
+    # 日本
+    "https://www3.nhk.or.jp/nhkworld/en/news/feeds/news.xml",  # NHK World 英文
+    "https://news.google.com/rss/search?q=bank+of+japan+OR+nikkei+OR+japan+economy+OR+boj+rate&hl=en-US&gl=US&ceid=US:en",
+    # 韩国
+    "https://en.yna.co.kr/RSS/news.xml",                   # 韩联社英文
+    "https://news.google.com/rss/search?q=kospi+OR+bank+of+korea+OR+samsung+earnings+OR+korea+economy&hl=en-US&gl=US&ceid=US:en",
+    # 中文
     "http://feed.eastmoney.com/news/cjxw.xml",
     "https://www.cls.cn/nodeapi/updateTelegraph",
     "https://news.google.com/rss/search?q=%E8%B4%A2%E8%81%94%E7%A4%BE&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
+    "https://news.google.com/rss/search?q=%E6%97%A5%E6%9C%AC%E7%BB%8F%E6%B5%8E+OR+%E6%97%A5%E5%85%83+OR+%E9%9F%A9%E5%9B%BD%E7%BB%8F%E6%B5%8E+OR+%E4%B8%89%E6%98%9F&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
+    # 英文综合关键词搜索
     "https://news.google.com/rss/search?q=trump+OR+federal+reserve+OR+war+OR+nuclear&hl=en-US&gl=US&ceid=US:en",
     "https://news.google.com/rss/search?q=nvidia+OR+tesla+OR+stock+market+crash+OR+rate+cut&hl=en-US&gl=US&ceid=US:en",
     "https://news.google.com/rss/search?q=%E7%BE%8E%E8%81%94%E5%82%A8+OR+%E7%89%B9%E6%9C%97%E6%99%AE+OR+%E4%B8%AD%E5%9B%BD%E7%BB%8F%E6%B5%8E+OR+A%E8%82%A1&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
@@ -108,9 +133,12 @@ BREAKING_RSS = [
 MARKET_RSS = [
     ("🌍 BBC 国际",   "https://feeds.bbci.co.uk/news/world/rss.xml"),
     ("🌍 半岛电视台",  "https://www.aljazeera.com/xml/rss/all.xml"),
+    ("🌍 德国之声",    "https://rss.dw.com/rdf/rss-en-business"),
     ("⚡ 财联社",     "https://news.google.com/rss/search?q=%E8%B4%A2%E8%81%94%E7%A4%BE&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"),
     ("📈 A股资讯",    "http://feed.eastmoney.com/news/cjxw.xml"),
     ("🇺🇸 美股财经",  "https://news.google.com/rss/search?q=%E7%BE%8E%E8%82%A1+%E7%BA%B3%E6%96%AF%E8%BE%BE%E5%85%8B&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"),
+    ("🇯🇵 日本财经",  "https://www3.nhk.or.jp/nhkworld/en/news/feeds/news.xml"),
+    ("🇰🇷 韩国财经",  "https://en.yna.co.kr/RSS/news.xml"),
     ("💰 财经快讯",    "https://news.google.com/rss/search?q=%E8%B4%A2%E7%BB%8F+%E8%82%A1%E5%B8%82&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"),
 ]
 
@@ -120,6 +148,8 @@ INDICES = [
     ("标普500",  "%5EGSPC"),
     ("上证指数",  "000001.SS"),
     ("深证成指",  "399001.SZ"),
+    ("日经225",  "%5EN225"),
+    ("韩国KOSPI", "%5EKS11"),
 ]
 
 
