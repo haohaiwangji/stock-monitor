@@ -258,7 +258,7 @@ def check_breaking_news(state):
     cutoff = datetime.now(tz=timezone.utc) - timedelta(hours=12)
 
     # 按类别收集新内容，同一次运行合并推送
-    collected = {}  # {category: [(title, link, zh), ...]}
+    collected = {}  # {category: [(title, link, zh, event_time), ...]}
 
     for feed_url in BREAKING_RSS:
         try:
@@ -270,6 +270,9 @@ def check_breaking_news(state):
                     pub_dt = datetime(*pub[:6], tzinfo=timezone.utc)
                     if pub_dt < cutoff:
                         continue
+                    event_time = pub_dt.astimezone(CST).strftime("%m-%d %H:%M")
+                else:
+                    event_time = now_str
                 title = entry.get("title", "").strip()
                 link = entry.get("link", "")
                 h = url_hash(link or title)
@@ -279,7 +282,7 @@ def check_breaking_news(state):
                 for category, keywords in BREAKING_KEYWORDS.items():
                     if any(kw in title_lower for kw in keywords):
                         zh = translate(title)
-                        collected.setdefault(category, []).append((title, link, zh))
+                        collected.setdefault(category, []).append((title, link, zh, event_time))
                         new_seen.append(h)
                         break
         except Exception as e:
@@ -294,8 +297,8 @@ def check_breaking_news(state):
     lines = [f"## 🔴 突发快讯 {now_str}\n"]
     for category, items in collected.items():
         lines.append(f"\n### {category}")
-        for title, link, zh in items:
-            lines.append(f"\n[{title}]({link})")
+        for title, link, zh, event_time in items:
+            lines.append(f"\n🕐 {event_time}（北京时间）\n[{title}]({link})")
             if zh and zh != title:
                 lines.append(f"> {zh}")
 
@@ -360,8 +363,14 @@ def check_market_report(state):
                     link = entry.get("link", "")
                     if not title:
                         continue
+                    event_time = ""
+                    if pub:
+                        event_time = datetime(*pub[:6], tzinfo=timezone.utc).astimezone(CST).strftime("%m-%d %H:%M")
                     zh = translate(title)
-                    item = f"\n{label}\n[{title}]({link})"
+                    item = f"\n{label}"
+                    if event_time:
+                        item += f" · 🕐 {event_time}"
+                    item += f"\n[{title}]({link})"
                     if zh and zh != title:
                         item += f"\n> {zh}"
                     news_items.append(item)
