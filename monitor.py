@@ -21,19 +21,23 @@ RSSHUB_INSTANCES = [
     "rsshub.rssforever.com",
     "rss.shab.fun",
     "rsshub.feeded.xyz",
+    "rsshub.atgw.io",
+    "rsshub.2zi.dev",
 ]
 
 NITTER_INSTANCES = [
+    "xcancel.com",
+    "nitter.net",
     "nitter.privacydev.net",
     "nitter.poast.org",
     "nitter.1d4.us",
     "nitter.cz",
     "notabird.site",
-    "xcancel.com",
     "nitter.woodland.cafe",
     "nitter.sethforprivacy.com",
-    "nitter.net",
     "nitter.fdn.fr",
+    "nitter.tiekoetter.com",
+    "nitter.rawbit.ninja",
 ]
 
 TWITTER_ACCOUNTS = {
@@ -285,7 +289,9 @@ def check_twitter(state):
         print(f"检查 @{handle} ...")
         entries = fetch_twitter_rss(handle)
         if not entries:
-            print(f"  {display}: 所有 Nitter 实例不可用，跳过")
+            print(f"  {display}: 所有节点不可用，跳过")
+            if key == "serenity":
+                push("⚠️ Serenity 监控异常", "所有 Twitter RSS 节点均不可用，本次无法检查 Serenity 新推文，请留意。")
             continue
 
         latest_id = entries[0].get("id", entries[0].get("link", ""))
