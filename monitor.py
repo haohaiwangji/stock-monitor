@@ -18,9 +18,13 @@ NITTER_INSTANCES = [
     "nitter.1d4.us",
     "nitter.cz",
     "notabird.site",
+    "xcancel.com",
+    "nitter.woodland.cafe",
+    "nitter.sethforprivacy.com",
     "nitter.net",
     "nitter.it",
     "nitter.fdn.fr",
+    "nitter.kavin.rocks",
 ]
 
 TWITTER_ACCOUNTS = {
@@ -172,12 +176,21 @@ def check_twitter(state):
                 if china_only and not is_china_related(title):
                     print(f"  {display}: 跳过非涉华内容")
                     continue
+
+                # 推文发送时间（北京时间）
+                pub = entry.get("published_parsed")
+                if pub:
+                    tweet_time = datetime(*pub[:6], tzinfo=timezone.utc).astimezone(CST).strftime("%m-%d %H:%M")
+                else:
+                    tweet_time = now_str
+
                 zh = translate(title)
-                body = f"**🐦 {display}**\n\n{title}"
+                body = f"**🐦 {display}**\n\n🕐 发推时间：{tweet_time}（北京时间）\n\n{title}"
                 if zh and zh != title:
                     body += f"\n\n> **中文：** {zh}"
+
                 tag = "🇨🇳 涉华 · " if china_only else ""
-                push(f"⚡ {tag}{display} 新推文 {now_str}", body)
+                push(f"⚡ {tag}{display} {tweet_time}", body)
 
         last_ids[key] = latest_id
 
