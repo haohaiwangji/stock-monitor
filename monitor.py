@@ -46,31 +46,66 @@ CHINA_KEYWORDS = [
 ]
 
 BREAKING_KEYWORDS = {
-    "🏦 美联储": ["federal reserve", "fed rate", "fomc", "jerome powell",
-                  "interest rate", "美联储", "加息", "降息", "鲍威尔"],
-    "🇺🇸 特朗普": ["trump tariff", "trump signs", "white house", "executive order",
-                   "特朗普", "关税", "贸易战", "trade war"],
-    "🚀 马斯克": ["elon musk says", "musk warns", "tesla earnings", "tesla stock",
-                  "spacex launch", "马斯克", "特斯拉"],
-    "🤖 黄仁勋/NVIDIA": ["jensen huang", "nvidia earnings", "nvidia announces",
-                         "blackwell", "h100", "h200", "黄仁勋", "英伟达"],
+    "🌍 全球政治": [
+        "war", "military strike", "invasion", "coup", "ceasefire", "nuclear",
+        "emergency declared", "assassination", "missile attack", "explosion",
+        "战争", "军事打击", "入侵", "政变", "核武", "暗杀", "停火", "紧急状态",
+    ],
+    "🏦 央行政策": [
+        "federal reserve", "fed rate", "fomc", "rate cut", "rate hike",
+        "central bank", "jerome powell", "inflation report", "cpi data",
+        "美联储", "加息", "降息", "货币政策", "通胀", "CPI", "央行", "鲍威尔",
+        "ecb rate", "bank of england", "pboc",
+    ],
+    "💹 金融市场": [
+        "market crash", "stock market plunge", "circuit breaker", "bank collapse",
+        "financial crisis", "recession fears", "bankruptcy", "debt default",
+        "市场崩溃", "暴跌", "暴涨", "熔断", "金融危机", "银行倒闭", "债务违约",
+        "stocks fall", "stocks surge", "wall street",
+    ],
+    "📈 A股/美股": [
+        "s&p 500", "nasdaq", "dow jones", "china stocks", "hang seng",
+        "上证", "深证", "A股", "港股", "美股", "跌停", "涨停",
+        "stock market today", "markets open", "markets close",
+    ],
+    "🇺🇸 特朗普": [
+        "trump tariff", "trump signs", "trump announces", "trump threatens",
+        "white house announces", "executive order", "trade war",
+        "特朗普", "关税", "贸易战", "白宫宣布",
+    ],
+    "🚀 马斯克/Tesla": [
+        "elon musk", "tesla earnings", "tesla stock", "spacex", "musk says",
+        "musk warns", "doge department", "马斯克", "特斯拉财报", "特斯拉股价",
+    ],
+    "🤖 黄仁勋/NVIDIA": [
+        "jensen huang", "nvidia earnings", "nvidia revenue", "nvidia chip",
+        "blackwell", "h100", "h200", "gb200", "nvidia stock",
+        "黄仁勋", "英伟达财报", "英伟达",
+    ],
+    "🇨🇳 中国要闻": [
+        "china gdp", "china economy", "pboc rate", "china policy", "beijing announces",
+        "china trade", "china sanctions", "china taiwan", "china us",
+        "中国经济", "人民银行", "中美", "两岸", "政策出台", "国务院",
+    ],
 }
 
 BREAKING_RSS = [
     "https://feeds.bbci.co.uk/news/world/rss.xml",
     "https://feeds.bbci.co.uk/news/business/rss.xml",
-    "https://feeds.reuters.com/reuters/topNews",
-    "https://feeds.reuters.com/reuters/businessNews",
-    "https://news.google.com/rss/search?q=federal+reserve+OR+trump+tariff+OR+nvidia&hl=en-US&gl=US&ceid=US:en",
-    "https://news.google.com/rss/search?q=elon+musk+OR+jensen+huang+OR+fomc&hl=en-US&gl=US&ceid=US:en",
+    "https://www.aljazeera.com/xml/rss/all.xml",
+    "http://feed.eastmoney.com/news/cjxw.xml",
+    "https://news.google.com/rss/search?q=trump+OR+federal+reserve+OR+war+OR+nuclear&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=nvidia+OR+tesla+OR+stock+market+crash+OR+rate+cut&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=%E7%BE%8E%E8%81%94%E5%82%A8+OR+%E7%89%B9%E6%9C%97%E6%99%AE+OR+%E4%B8%AD%E5%9B%BD%E7%BB%8F%E6%B5%8E+OR+A%E8%82%A1&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
+    "https://news.google.com/rss/search?q=%E8%82%A1%E5%B8%82+OR+%E6%9A%B4%E8%B7%8C+OR+%E9%87%91%E8%9E%8D%E5%8D%B1%E6%9C%BA+OR+%E5%85%B3%E7%A8%8E&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
 ]
 
 MARKET_RSS = [
     ("🌍 BBC 国际",  "https://feeds.bbci.co.uk/news/world/rss.xml"),
-    ("🌍 路透社",    "https://feeds.reuters.com/reuters/topNews"),
+    ("🌍 半岛电视台", "https://www.aljazeera.com/xml/rss/all.xml"),
     ("📈 A股资讯",   "http://feed.eastmoney.com/news/cjxw.xml"),
-    ("🇺🇸 美股",    "https://feeds.reuters.com/reuters/businessNews"),
-    ("💰 财经",      "https://news.google.com/rss/search?q=%E8%B4%A2%E7%BB%8F+%E8%82%A1%E5%B8%82&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"),
+    ("🇺🇸 美股财经", "https://news.google.com/rss/search?q=%E7%BE%8E%E8%82%A1+%E7%BA%B3%E6%96%AF%E8%BE%BE%E5%85%8B&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"),
+    ("💰 财经快讯",   "https://news.google.com/rss/search?q=%E8%B4%A2%E7%BB%8F+%E8%82%A1%E5%B8%82&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"),
 ]
 
 INDICES = [
