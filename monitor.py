@@ -257,6 +257,9 @@ def check_breaking_news(state):
     new_seen = []
     cutoff = datetime.now(tz=timezone.utc) - timedelta(hours=12)
 
+    # 按类别收集新内容，同一次运行合并推送
+    collected = {}  # {category: [(title, link, zh), ...]}
+
     for feed_url in BREAKING_RSS:
         try:
             feed = feedparser.parse(feed_url)
@@ -276,14 +279,31 @@ def check_breaking_news(state):
                 for category, keywords in BREAKING_KEYWORDS.items():
                     if any(kw in title_lower for kw in keywords):
                         zh = translate(title)
-                        body = f"**{category} 突发快讯**\n\n[{title}]({link})"
-                        if zh and zh != title:
-                            body += f"\n\n> **中文：** {zh}"
-                        push(f"🔴 突发 · {category} {now_str}", body)
+                        collected.setdefault(category, []).append((title, link, zh))
                         new_seen.append(h)
                         break
         except Exception as e:
             print(f"  突发RSS失败: {e}")
+
+    if not collected:
+        print("  无新突发新闻")
+        state["seen_news"] = (list(seen) + new_seen)[-300:]
+        return
+
+    # 合并成一条推送
+    lines = [f"## 🔴 突发快讯 {now_str}\n"]
+    for category, items in collected.items():
+        lines.append(f"\n### {category}")
+        for title, link, zh in items:
+            lines.append(f"\n[{title}]({link})")
+            if zh and zh != title:
+                lines.append(f"> {zh}")
+
+    content = "\n".join(lines)
+    total = sum(len(v) for v in collected.items())
+    cats = " · ".join(collected.keys())
+    push(f"🔴 突发快讯 {now_str}", content)
+    print(f"  合并推送 {len(collected)} 个类别: {cats}")
 
     state["seen_news"] = (list(seen) + new_seen)[-300:]
 
