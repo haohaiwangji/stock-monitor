@@ -483,12 +483,90 @@ def check_market_report(state):
         "### 📰 【新闻汇总】",
         "",
     ]
-    if news_items:
-        parts.extend(news_items)
-    else:
-        parts.append("暂无对股市有实质性影响的新闻")
+    if not news_items:
+        print("  市场播报：本半小时无重要新闻，跳过推送")
+        return
 
+    parts.extend(news_items)
     push(f"🌐 市场播报 {now_str}", "\n".join(parts))
+
+
+# ── 每日复盘 ─────────────────────────────────────────
+
+def check_daily_recap(state):
+    now = datetime.now(tz=CST)
+    hour = now.hour
+
+    # 只在08:xx 和 20:xx 触发
+    if hour not in (8, 20):
+        return
+
+    date_str = now.strftime("%Y-%m-%d")
+    recap_key = f"recap_{date_str}_{hour:02d}"
+    if state.get(recap_key):
+        return
+    state[recap_key] = True
+
+    if hour == 20:
+        start_h, end_h = 8, 20
+        title_label = f"📋 日间复盘 {now.strftime('%m-%d')} 08:00-20:00"
+    else:
+        start_h, end_h = 0, 8
+        title_label = f"📋 早间汇总 {now.strftime('%m-%d')} 00:00-08:00"
+
+    today = now.date()
+    start_utc = datetime(today.year, today.month, today.day, start_h, 0, tzinfo=CST).astimezone(timezone.utc)
+    end_utc   = datetime(today.year, today.month, today.day, end_h,   0, tzinfo=CST).astimezone(timezone.utc)
+
+    news_items = []
+    seen_titles = set()
+
+    all_feeds = list(set(BREAKING_RSS) | {url for _, url in MARKET_RSS})
+    for url in all_feeds:
+        try:
+            feed = feedparser.parse(url)
+            for entry in feed.entries[:50]:
+                pub = entry.get("published_parsed")
+                if not pub:
+                    continue
+                pub_dt = datetime(*pub[:6], tzinfo=timezone.utc)
+                if pub_dt < start_utc or pub_dt >= end_utc:
+                    continue
+                title = entry.get("title", "").strip()
+                if not title or title in seen_titles:
+                    continue
+                if not has_market_impact(title):
+                    continue
+                seen_titles.add(title)
+                event_time = pub_dt.astimezone(CST).strftime("%H:%M")
+                zh = translate(title)
+                display = zh if zh and zh != title else title
+                link = entry.get("link", "")
+                news_items.append((event_time, display, link))
+        except Exception:
+            pass
+
+    news_items.sort(key=lambda x: x[0])
+
+    now_str = now.strftime("%H:%M")
+    parts = [
+        f"## {title_label}",
+        f"⏰ 发送时间：{now_str}（北京时间）",
+        "",
+        "### 📰 重要新闻回顾",
+        "",
+    ]
+    if news_items:
+        for t, text, link in news_items:
+            if link:
+                parts.append(f"🕐 {t}（北京时间）\n[{text}]({link})\n")
+            else:
+                parts.append(f"🕐 {t}（北京时间）\n{text}\n")
+    else:
+        parts.append("本时段内无重要市场新闻")
+
+    push(title_label, "\n".join(parts))
+    print(f"  复盘推送完成：{len(news_items)} 条")
 
 
 # ── 主入口 ───────────────────────────────────────────
@@ -501,6 +579,8 @@ def main():
     check_breaking_news(state)
     print("=== 市场播报 ===")
     check_market_report(state)
+    print("=== 每日复盘 ===")
+    check_daily_recap(state)
     save_state(state)
     print("=== 完成 ===")
 
