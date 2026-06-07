@@ -2,6 +2,7 @@ import feedparser
 import requests
 from datetime import datetime, timezone, timedelta
 import os
+import urllib.parse
 
 SERVERCHAN_KEY = os.environ["SERVERCHAN_KEY"]
 CST = timezone(timedelta(hours=8))
@@ -14,7 +15,6 @@ INDICES = [
     ("深证成指", "399001.SZ"),
 ]
 
-# Nitter instances to try for Twitter RSS
 NITTER_INSTANCES = [
     "nitter.privacydev.net",
     "nitter.poast.org",
@@ -32,6 +32,25 @@ RSS_FEEDS = [
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 }
+
+
+def is_english(text):
+    english_chars = sum(1 for c in text if ord(c) < 128 and c.isalpha())
+    return english_chars > len(text) * 0.5
+
+
+def translate_to_chinese(text):
+    if not text or not is_english(text):
+        return ""
+    try:
+        encoded = urllib.parse.quote(text[:300])
+        url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q={encoded}"
+        resp = requests.get(url, headers=HEADERS, timeout=8)
+        result = resp.json()
+        translated = "".join(part[0] for part in result[0] if part[0])
+        return translated
+    except Exception:
+        return ""
 
 
 def get_market_data():
@@ -67,6 +86,18 @@ def get_twitter_feed(username):
     return [], None
 
 
+def format_entry(label, title, link=""):
+    translation = translate_to_chinese(title)
+    text = "\n" + label + "\n"
+    if link:
+        text += "[" + title + "](" + link + ")"
+    else:
+        text += title
+    if translation and translation != title:
+        text += "\n> " + translation
+    return text
+
+
 def get_news():
     cutoff = datetime.now(tz=timezone.utc) - timedelta(hours=6)
     items = []
@@ -81,9 +112,8 @@ def get_news():
                 if pub_dt < cutoff:
                     continue
             title = entry.get("title", "").strip()
-            link = entry.get("link", "")
             if title:
-                items.append("\n🐦 Serenity (@aleabitoreddit)\n" + title[:200])
+                items.append(format_entry("🐦 Serenity (@aleabitoreddit)", title[:200]))
     else:
         print("Twitter feed unavailable (Nitter instances all failed)")
 
@@ -103,7 +133,7 @@ def get_news():
                 title = entry.get("title", "").strip()
                 link = entry.get("link", "")
                 if title:
-                    items.append("\n" + label + "\n[" + title + "](" + link + ")")
+                    items.append(format_entry(label, title, link))
                     count += 1
         except Exception as e:
             print(f"{label} 获取失败: {e}")
@@ -135,7 +165,7 @@ def main():
         timeout=10,
     )
     print("推送成功" if resp.status_code == 200 else "推送失败: " + str(resp.status_code))
-    print("内容预览:\n" + content[:800])
+    print("内容预览:\n" + content[:1000])
 
 
 if __name__ == "__main__":
