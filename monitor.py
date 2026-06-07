@@ -294,9 +294,9 @@ def check_breaking_news(state):
         return
 
     # 同一次检查的所有突发新闻合并成一条，立即推送
-    lines = [f"## 🔴 突发快讯 {now_str}\n"]
+    lines = [f'## <font color="red">🔴 突发快讯</font> {now_str}\n']
     for category, items in collected.items():
-        lines.append(f"\n### {category}")
+        lines.append(f'\n### <font color="red">{category}</font>')
         for title, link, zh, event_time in items:
             lines.append(f"\n🕐 {event_time}（北京时间）\n[{title}]({link})")
             if zh and zh != title:
