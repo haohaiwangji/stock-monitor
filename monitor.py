@@ -97,6 +97,8 @@ BREAKING_RSS = [
     "https://feeds.bbci.co.uk/news/business/rss.xml",
     "https://www.aljazeera.com/xml/rss/all.xml",
     "http://feed.eastmoney.com/news/cjxw.xml",
+    "https://www.cls.cn/nodeapi/updateTelegraph",
+    "https://news.google.com/rss/search?q=%E8%B4%A2%E8%81%94%E7%A4%BE&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
     "https://news.google.com/rss/search?q=trump+OR+federal+reserve+OR+war+OR+nuclear&hl=en-US&gl=US&ceid=US:en",
     "https://news.google.com/rss/search?q=nvidia+OR+tesla+OR+stock+market+crash+OR+rate+cut&hl=en-US&gl=US&ceid=US:en",
     "https://news.google.com/rss/search?q=%E7%BE%8E%E8%81%94%E5%82%A8+OR+%E7%89%B9%E6%9C%97%E6%99%AE+OR+%E4%B8%AD%E5%9B%BD%E7%BB%8F%E6%B5%8E+OR+A%E8%82%A1&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
@@ -104,11 +106,12 @@ BREAKING_RSS = [
 ]
 
 MARKET_RSS = [
-    ("🌍 BBC 国际",  "https://feeds.bbci.co.uk/news/world/rss.xml"),
-    ("🌍 半岛电视台", "https://www.aljazeera.com/xml/rss/all.xml"),
-    ("📈 A股资讯",   "http://feed.eastmoney.com/news/cjxw.xml"),
-    ("🇺🇸 美股财经", "https://news.google.com/rss/search?q=%E7%BE%8E%E8%82%A1+%E7%BA%B3%E6%96%AF%E8%BE%BE%E5%85%8B&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"),
-    ("💰 财经快讯",   "https://news.google.com/rss/search?q=%E8%B4%A2%E7%BB%8F+%E8%82%A1%E5%B8%82&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"),
+    ("🌍 BBC 国际",   "https://feeds.bbci.co.uk/news/world/rss.xml"),
+    ("🌍 半岛电视台",  "https://www.aljazeera.com/xml/rss/all.xml"),
+    ("⚡ 财联社",     "https://news.google.com/rss/search?q=%E8%B4%A2%E8%81%94%E7%A4%BE&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"),
+    ("📈 A股资讯",    "http://feed.eastmoney.com/news/cjxw.xml"),
+    ("🇺🇸 美股财经",  "https://news.google.com/rss/search?q=%E7%BE%8E%E8%82%A1+%E7%BA%B3%E6%96%AF%E8%BE%BE%E5%85%8B&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"),
+    ("💰 财经快讯",    "https://news.google.com/rss/search?q=%E8%B4%A2%E7%BB%8F+%E8%82%A1%E5%B8%82&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"),
 ]
 
 INDICES = [
