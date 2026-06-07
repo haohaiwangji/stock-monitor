@@ -471,20 +471,21 @@ def check_market_report(state):
                     display_text = zh if zh and zh != title else title
                     link = entry.get("link", "")
                     if link:
-                        news_items.append(f"- [{event_time}] [{display_text}]({link})")
+                        news_items.append(f"🕐 {event_time}（北京时间）\n[{display_text}]({link})\n")
                     else:
-                        news_items.append(f"- [{event_time}] {display_text}")
+                        news_items.append(f"🕐 {event_time}（北京时间）\n{display_text}\n")
             except Exception:
                 pass
 
     parts = [
-        f"## 🌐 全球市场半小时播报",
-        f"⏰ 播报时间：{now_str}（北京时间）",
+        f"## 🌐 全球市场播报 {now_str}",
         "",
         "### 📊 【实时行情速递】",
+        "",
         market or "暂无数据（休市或数据源限制）",
         "",
-        "### 📰 【过去半小时新闻汇总】",
+        "### 📰 【新闻汇总】",
+        "",
     ]
     if news_items:
         parts.extend(news_items)
