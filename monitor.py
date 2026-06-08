@@ -245,8 +245,29 @@ def url_hash(s):
     return hashlib.md5(s.encode()).hexdigest()[:12]
 
 
+def fetch_twitter_apify(handle):
+    """通过 Apify Cookieless 抓推文，返回标准化列表"""
+    token = os.environ.get("APIFY_TOKEN", "")
+    if not token:
+        return []
+    try:
+        resp = requests.post(
+            "https://api.apify.com/v2/acts/XSXdgwgBakXd5vRxB/run-sync-get-dataset-items"
+            f"?token={token}&timeout=60",
+            json={"username": handle, "maxTweets": 10},
+            timeout=90,
+        )
+        if resp.status_code in (200, 201):
+            items = resp.json()
+            print(f"  Apify OK: {len(items)} 条")
+            return items
+    except Exception as e:
+        print(f"  Apify 失败: {e}")
+    return []
+
+
 def fetch_twitter_rss(handle):
-    # 先试 RSSHub（更稳定）
+    # 先试 RSSHub
     for instance in RSSHUB_INSTANCES:
         try:
             url = f"https://{instance}/twitter/user/{handle}"
@@ -258,8 +279,7 @@ def fetch_twitter_rss(handle):
                     return feed.entries
         except Exception:
             continue
-
-    # RSSHub 全失败，fallback 到 Nitter
+    # fallback Nitter
     for instance in NITTER_INSTANCES:
         try:
             url = f"https://{instance}/{handle}/rss"
@@ -271,7 +291,6 @@ def fetch_twitter_rss(handle):
                     return feed.entries
         except Exception:
             continue
-
     return []
 
 
@@ -287,51 +306,92 @@ def check_twitter(state):
         china_only = acct["filter"] == "china"
 
         print(f"检查 @{handle} ...")
-        entries = fetch_twitter_rss(handle)
-        if not entries:
-            print(f"  {display}: 所有节点不可用，跳过")
-            if key == "serenity":
-                push("⚠️ Serenity 监控异常", "所有 Twitter RSS 节点均不可用，本次无法检查 Serenity 新推文，请留意。")
-            continue
 
-        latest_id = entries[0].get("id", entries[0].get("link", ""))
-        last_id = last_ids.get(key, "")
+        # 优先 Apify，失败再走 Nitter/RSSHub
+        apify_items = fetch_twitter_apify(handle)
 
-        new_entries = []
-        for entry in entries:
-            eid = entry.get("id", entry.get("link", ""))
-            if eid == last_id:
-                break
-            new_entries.append(entry)
+        if apify_items:
+            last_id = last_ids.get(key, "")
+            # Apify 返回 tweet_id 字符串，用数值比较找新推文
+            try:
+                last_id_int = int(last_id) if last_id else 0
+            except ValueError:
+                last_id_int = 0
 
-        if not new_entries:
-            print(f"  {display}: 无新推文")
+            new_items = [t for t in apify_items if int(t.get("tweet_id", 0)) > last_id_int]
+
+            if not new_items:
+                print(f"  {display}: 无新推文")
+            else:
+                for item in sorted(new_items, key=lambda x: int(x.get("tweet_id", 0))):
+                    title = item.get("text", "").strip()[:300]
+                    if not title:
+                        continue
+                    if china_only and not is_china_related(title):
+                        print(f"  {display}: 跳过非涉华内容")
+                        continue
+
+                    # 解析推文时间
+                    try:
+                        from email.utils import parsedate
+                        import time as _time
+                        t = parsedate(item.get("created_at", ""))
+                        tweet_time = datetime(*t[:6], tzinfo=timezone.utc).astimezone(CST).strftime("%m-%d %H:%M")
+                    except Exception:
+                        tweet_time = now_str
+
+                    tweet_id = item.get("tweet_id", "")
+                    link = f"https://x.com/{handle}/status/{tweet_id}"
+                    zh = translate(title)
+                    signal = trading_signal(title + " " + (zh or ""))
+                    body = f"**🐦 {display}**\n\n🕒 发推时间：{tweet_time}（北京时间）\n\n📝 **中文翻译：**\n{zh if zh and zh != title else title}\n\n💡 **交易信号解读：** {signal}\n\n[原文链接]({link})"
+                    if zh and zh != title:
+                        body += f"\n\n---\n*原文：{title}*"
+
+                    tag = "🇨🇳 涉华 · " if china_only else ""
+                    push(f"⚡ {tag}{display} {tweet_time}", body)
+
+            # 保存最新 tweet_id
+            if apify_items:
+                latest = max(int(t.get("tweet_id", 0)) for t in apify_items)
+                last_ids[key] = str(latest)
+
         else:
-            for entry in reversed(new_entries):
-                title = entry.get("title", "").strip()[:300]
-                if not title:
-                    continue
-                if china_only and not is_china_related(title):
-                    print(f"  {display}: 跳过非涉华内容")
-                    continue
+            # Apify 失败，fallback RSS/Nitter
+            entries = fetch_twitter_rss(handle)
+            if not entries:
+                print(f"  {display}: 所有渠道不可用，跳过")
+                if key == "serenity":
+                    push("⚠️ Serenity 监控异常", "Apify 和所有 Nitter 节点均不可用，本次无法检查新推文，请留意。")
+                continue
 
-                # 推文发送时间（北京时间）
-                pub = entry.get("published_parsed")
-                if pub:
-                    tweet_time = datetime(*pub[:6], tzinfo=timezone.utc).astimezone(CST).strftime("%m-%d %H:%M")
-                else:
-                    tweet_time = now_str
+            latest_id = entries[0].get("id", entries[0].get("link", ""))
+            last_id = last_ids.get(key, "")
+            new_entries = []
+            for entry in entries:
+                eid = entry.get("id", entry.get("link", ""))
+                if eid == last_id:
+                    break
+                new_entries.append(entry)
 
-                zh = translate(title)
-                signal = trading_signal(title + " " + (zh or ""))
-                body = f"**🐦 {display}**\n\n🕒 发推时间：{tweet_time}（北京时间）\n\n📝 **中文翻译：**\n{zh if zh and zh != title else title}\n\n💡 **交易信号解读：** {signal}"
-                if zh and zh != title:
-                    body += f"\n\n---\n*原文：{title}*"
+            if not new_entries:
+                print(f"  {display}: 无新推文")
+            else:
+                for entry in reversed(new_entries):
+                    title = entry.get("title", "").strip()[:300]
+                    if not title:
+                        continue
+                    if china_only and not is_china_related(title):
+                        continue
+                    pub = entry.get("published_parsed")
+                    tweet_time = datetime(*pub[:6], tzinfo=timezone.utc).astimezone(CST).strftime("%m-%d %H:%M") if pub else now_str
+                    zh = translate(title)
+                    signal = trading_signal(title + " " + (zh or ""))
+                    body = f"**🐦 {display}**\n\n🕒 发推时间：{tweet_time}（北京时间）\n\n📝 **中文翻译：**\n{zh if zh and zh != title else title}\n\n💡 **交易信号解读：** {signal}"
+                    tag = "🇨🇳 涉华 · " if china_only else ""
+                    push(f"⚡ {tag}{display} {tweet_time}", body)
 
-                tag = "🇨🇳 涉华 · " if china_only else ""
-                push(f"⚡ {tag}{display} {tweet_time}", body)
-
-        last_ids[key] = latest_id
+            last_ids[key] = latest_id
 
 
 # ── 突发新闻 ──────────────────────────────────────────
