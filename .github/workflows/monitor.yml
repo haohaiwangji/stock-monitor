@@ -25,6 +25,7 @@ jobs:
         env:
           SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
           SERVERCHAN_KEY2: ${{ secrets.SERVERCHAN_KEY2 }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
         run: python monitor.py
 
       - name: 保存状态
