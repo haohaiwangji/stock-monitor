@@ -7,10 +7,10 @@ import urllib.parse
 from datetime import datetime, timezone, timedelta
 
 # --- 配置修改开始 ---
-# 将 SERVERCHAN_KEYS 替换为 PUSHPLUS_TOKENS
+# 将 SERVERCHAN_KEYS 替换为 SERVERCHAN_KEYS
 # 支持多个 token，用英文逗号分隔，例如: "token1,token2"
-PUSHPLUS_TOKENS = [
-    k.strip() for k in os.environ.get("PUSHPLUS_TOKEN", "").split(",") if k.strip()
+SERVERCHAN_KEYS = [
+    k.strip() for k in os.environ.get("SERVERCHAN_KEY", "").split(",") if k.strip()
 ]
 # --- 配置修改结束 ---
 
@@ -230,15 +230,15 @@ def push(title, content):
     """
     使用 PushPlus 进行推送
     """
-    if not PUSHPLUS_TOKENS:
-        print("未配置 PUSHPLUS_TOKEN，跳过推送")
+    if not SERVERCHAN_KEYS:
+        print("未配置 SERVERCHAN_KEY，跳过推送")
         return True
 
     ok_all = True
     # PushPlus API 地址
     url = "https://www.pushplus.plus/send"
 
-    for token in PUSHPLUS_TOKENS:
+    for token in SERVERCHAN_KEYS:
         try:
             # 构建请求数据
             data = {
